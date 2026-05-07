@@ -26,6 +26,10 @@ def _redirect_back(request: HttpRequest, fallback: str) -> HttpResponse:
     return redirect(request.META.get("HTTP_REFERER") or fallback)
 
 
+def _simulation_enabled() -> bool:
+    return bool(getattr(settings, "SCANOPS_ENABLE_SIMULATION", False))
+
+
 class RunningScanListView(CapabilityRequiredMixin, ListView):
     capability_key = PermissionRule.PermissionKey.VIEW_SCANS
     model = ScanExecution
@@ -75,7 +79,7 @@ class RunningScanListView(CapabilityRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         executions = list(context["executions"])
-        if settings.DEBUG:
+        if _simulation_enabled():
             for execution in executions:
                 if execution.status in {ScanExecution.Status.QUEUED, ScanExecution.Status.RUNNING}:
                     simulate_execution_tick(execution)
@@ -191,7 +195,7 @@ class ScanMonitorDetailView(CapabilityRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         execution = context["execution"]
-        if settings.DEBUG:
+        if _simulation_enabled():
             simulate_execution_tick(execution)
         context["result"] = getattr(execution, "result", None)
         context["recent_events"] = execution.event_logs.all()[:60]
@@ -214,7 +218,7 @@ class MonitorStatusPartialView(CapabilityRequiredMixin, View):
             queryset,
             pk=pk,
         )
-        if settings.DEBUG:
+        if _simulation_enabled():
             simulate_execution_tick(execution)
         return render(
             request,

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from django.conf import settings
 from django.contrib import messages
 from django.db.models import Q
 from django.http import HttpResponse
@@ -13,14 +12,25 @@ from apps.ops.models import PermissionRule
 from apps.ops.rbac import CapabilityRequiredMixin
 from apps.ops.services import data_visibility_service
 from apps.scans.forms import CompareResultsForm, ResultFilterForm
-from apps.scans.models import ScanExecution, ScanResult
+from apps.scans.models import ScanResult
 from apps.scans.services.comparison_service import build_comparison_from_current, compare_results
 from apps.scans.services.result_service import (
     build_host_detail_context,
     build_result_detail_context,
-    generate_mock_result_for_execution,
 )
 from apps.targets.models import Target
+
+
+def _has_multi_host_rows(result: ScanResult) -> bool:
+    host_markers: set[str] = set()
+    for row in result.port_results.all():
+        if isinstance(row.extra_data_json, dict):
+            host = (row.extra_data_json.get("host") or "").strip()
+            if host:
+                host_markers.add(host)
+                if len(host_markers) > 1:
+                    return True
+    return False
 
 
 class ScanResultListView(CapabilityRequiredMixin, ListView):
@@ -36,14 +46,6 @@ class ScanResultListView(CapabilityRequiredMixin, ListView):
         return [self.template_name]
 
     def get_queryset(self):
-        if settings.DEBUG:
-            pending_results = ScanExecution.objects.filter(
-                status=ScanExecution.Status.COMPLETED,
-                result__isnull=True,
-            )[:20]
-            for execution in pending_results:
-                generate_mock_result_for_execution(execution, force=False)
-
         queryset = (
             ScanResult.objects.select_related(
                 "execution",
@@ -164,6 +166,7 @@ class ScanParsedOutputView(CapabilityRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context.update(build_result_detail_context(self.object, user=self.request.user))
         context["parsed"] = self.object.parsed_output_json or {}
         context["breadcrumbs"] = [
             {"label": "Results", "url": reverse("scans:results")},
@@ -265,5 +268,9 @@ class ResultPortsPartialView(CapabilityRequiredMixin, View):
         return render(
             request,
             "partials/result_ports_table.html",
-            {"result": result, "port_results": result.port_results.all().order_by("port", "protocol")},
+            {
+                "result": result,
+                "port_results": result.port_results.all().order_by("port", "protocol"),
+                "has_multi_host_rows": _has_multi_host_rows(result),
+            },
         )

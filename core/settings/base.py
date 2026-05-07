@@ -116,6 +116,9 @@ SCANOPS_SELF_REGISTRATION_REQUIRES_APPROVAL = env_flag(
 SCANOPS_SELF_REGISTRATION_DEFAULT_ROLE = (
     os.environ.get("SCANOPS_SELF_REGISTRATION_DEFAULT_ROLE", "viewer").strip().lower()
 )
+SCANOPS_ENABLE_SIMULATION = env_flag("SCANOPS_ENABLE_SIMULATION", default=False)
+SCANOPS_NMAP_BINARY = (os.environ.get("SCANOPS_NMAP_BINARY") or "nmap").strip() or "nmap"
+SCANOPS_SCAN_TIMEOUT_SECONDS = int(os.environ.get("SCANOPS_SCAN_TIMEOUT_SECONDS", "900"))
 
 # Email configuration
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")

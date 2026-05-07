@@ -1,8 +1,11 @@
 {% load scanops_tags %}
 <div class="overflow-x-auto">
-    <table class="w-full min-w-[820px] text-left border-collapse">
+    <table class="w-full min-w-[980px] text-left border-collapse">
         <thead>
         <tr class="border-b border-slate-800 bg-slate-900/70">
+            {% if has_multi_host_rows %}
+                <th class="px-5 py-3 text-[11px] uppercase tracking-wider text-slate-500">Host</th>
+            {% endif %}
             <th class="px-5 py-3 text-[11px] uppercase tracking-wider text-slate-500">Port</th>
             <th class="px-5 py-3 text-[11px] uppercase tracking-wider text-slate-500">Protocol</th>
             <th class="px-5 py-3 text-[11px] uppercase tracking-wider text-slate-500">State</th>
@@ -14,9 +17,14 @@
         <tbody class="divide-y divide-slate-800/70">
         {% for port in port_results %}
             <tr class="hover:bg-slate-800/30 transition-colors">
+                {% if has_multi_host_rows %}
+                    <td class="px-5 py-3 text-sm text-slate-300 font-mono">{{ port.extra_data_json.host|default:"-" }}</td>
+                {% endif %}
                 <td class="px-5 py-3 text-sm font-semibold text-blue-300">{{ port.port }}</td>
                 <td class="px-5 py-3 text-sm text-slate-300 uppercase">{{ port.protocol }}</td>
-                <td class="px-5 py-3 text-sm text-slate-300">{{ port.state }}</td>
+                <td class="px-5 py-3 text-sm">
+                    <span class="px-2 py-1 rounded text-[10px] uppercase font-semibold {{ port.state|port_state_badge }}">{{ port.state }}</span>
+                </td>
                 <td class="px-5 py-3 text-sm text-slate-300">{{ port.service_name|default:"-" }}</td>
                 <td class="px-5 py-3 text-sm text-slate-400">{{ port.service_version|default:"-" }}</td>
                 <td class="px-5 py-3">
@@ -25,7 +33,7 @@
             </tr>
         {% empty %}
             <tr>
-                <td colspan="6" class="px-5 py-10 text-center text-slate-500">No port findings recorded.</td>
+                <td colspan="{% if has_multi_host_rows %}7{% else %}6{% endif %}" class="px-5 py-10 text-center text-slate-500">No port findings recorded.</td>
             </tr>
         {% endfor %}
         </tbody>

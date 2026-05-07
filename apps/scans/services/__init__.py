@@ -14,6 +14,7 @@ from apps.scans.services.history_service import (
     permanently_delete_execution,
     rerun_execution,
 )
+from apps.scans.services.nmap_execution_service import run_execution_with_nmap
 from apps.scans.services.result_service import (
     build_host_detail_context,
     build_result_detail_context,
