@@ -20,52 +20,66 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4 mb-6">
+    {% if parser_warnings %}
+        <div class="scanops-panel p-4 mb-6 border border-amber-500/40 bg-amber-500/5">
+            <p class="text-[11px] uppercase tracking-widest text-amber-300 mb-2">Parser Warnings</p>
+            <div class="space-y-1">
+                {% for warning in parser_warnings %}
+                    <p class="text-sm text-amber-100">{{ warning }}</p>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4 mb-6">
         <div class="scanops-panel p-4">
             <p class="text-[10px] uppercase tracking-widest text-slate-500">Host Status</p>
             <p class="mt-2"><span class="px-2 py-1 rounded text-[10px] uppercase font-semibold {{ result.host_status|status_badge }}">{{ result.get_host_status_display }}</span></p>
         </div>
         <div class="scanops-panel p-4">
+            <p class="text-[10px] uppercase tracking-widest text-slate-500">Total Ports</p>
+            <p class="text-2xl font-bold text-cyan-300 mt-2">{{ summary_counts.total_ports }}</p>
+        </div>
+        <div class="scanops-panel p-4">
             <p class="text-[10px] uppercase tracking-widest text-slate-500">Open</p>
-            <p class="text-2xl font-bold text-emerald-300 mt-2">{{ result.total_open_ports }}</p>
+            <p class="text-2xl font-bold text-emerald-300 mt-2">{{ summary_counts.open_ports }}</p>
         </div>
         <div class="scanops-panel p-4">
             <p class="text-[10px] uppercase tracking-widest text-slate-500">Closed</p>
-            <p class="text-2xl font-bold text-slate-300 mt-2">{{ result.total_closed_ports }}</p>
+            <p class="text-2xl font-bold text-rose-300 mt-2">{{ summary_counts.closed_ports }}</p>
         </div>
         <div class="scanops-panel p-4">
             <p class="text-[10px] uppercase tracking-widest text-slate-500">Filtered</p>
-            <p class="text-2xl font-bold text-amber-300 mt-2">{{ result.total_filtered_ports }}</p>
+            <p class="text-2xl font-bold text-amber-300 mt-2">{{ summary_counts.filtered_ports }}</p>
         </div>
         <div class="scanops-panel p-4">
-            <p class="text-[10px] uppercase tracking-widest text-slate-500">Services</p>
-            <p class="text-2xl font-bold text-blue-300 mt-2">{{ result.total_services_detected }}</p>
+            <p class="text-[10px] uppercase tracking-widest text-slate-500">Unique Services</p>
+            <p class="text-2xl font-bold text-blue-300 mt-2">{{ summary_counts.unique_services }}</p>
         </div>
         <div class="scanops-panel p-4">
-            <p class="text-[10px] uppercase tracking-widest text-slate-500">OS Guess</p>
-            <p class="text-sm font-semibold text-slate-200 mt-2">{{ result.os_guess|default:"Unknown" }}</p>
+            <p class="text-[10px] uppercase tracking-widest text-slate-500">Protocols</p>
+            <p class="text-2xl font-bold text-violet-300 mt-2">{{ summary_counts.protocol_count }}</p>
         </div>
         <div class="scanops-panel p-4">
             <p class="text-[10px] uppercase tracking-widest text-slate-500">Duration</p>
-            <p class="text-2xl font-bold text-cyan-300 mt-2">{{ result.execution.duration_seconds }}s</p>
+            <p class="text-2xl font-bold text-slate-200 mt-2">{{ result.execution.duration_seconds }}s</p>
         </div>
     </div>
 
     <div class="scanops-panel p-2 mb-6 overflow-x-auto">
         <div class="flex items-center gap-2 min-w-max">
             <a href="?tab=overview" class="px-3 py-2 rounded text-sm {% if tab == 'overview' %}bg-blue-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">Overview</a>
-            <a href="?tab=ports" class="px-3 py-2 rounded text-sm {% if tab == 'ports' %}bg-blue-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">Open Ports</a>
+            <a href="?tab=ports" class="px-3 py-2 rounded text-sm {% if tab == 'ports' %}bg-blue-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">Ports</a>
             <a href="?tab=services" class="px-3 py-2 rounded text-sm {% if tab == 'services' %}bg-blue-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">Services</a>
-            <a href="?tab=os" class="px-3 py-2 rounded text-sm {% if tab == 'os' %}bg-blue-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">OS Detection</a>
+            <a href="?tab=versions" class="px-3 py-2 rounded text-sm {% if tab == 'versions' %}bg-blue-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">Versions</a>
+            <a href="?tab=os" class="px-3 py-2 rounded text-sm {% if tab == 'os' %}bg-blue-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">OS</a>
             <a href="?tab=traceroute" class="px-3 py-2 rounded text-sm {% if tab == 'traceroute' %}bg-blue-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">Traceroute</a>
             <a href="?tab=scripts" class="px-3 py-2 rounded text-sm {% if tab == 'scripts' %}bg-blue-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">Scripts</a>
             <a href="?tab=raw" class="px-3 py-2 rounded text-sm {% if tab == 'raw' %}bg-blue-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">Raw Output</a>
-            <a href="?tab=parsed" class="px-3 py-2 rounded text-sm {% if tab == 'parsed' %}bg-blue-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">Parsed Output</a>
-            <a href="?tab=notes" class="px-3 py-2 rounded text-sm {% if tab == 'notes' %}bg-blue-600 text-white{% else %}text-slate-300 hover:bg-slate-800{% endif %}">Comments</a>
         </div>
     </div>
 
-    <div class="scanops-panel p-6">
+    <div class="space-y-4">
         {% if tab == 'ports' %}
             <div
                 id="result-ports-container"
@@ -73,30 +87,69 @@
                 hx-trigger="load"
                 hx-swap="innerHTML"
             >
-                {% include "partials/result_ports_table.html" %}
+                {% include "partials/result_ports_table.html" with port_results=port_results has_multi_host_rows=has_multi_host_rows %}
             </div>
         {% elif tab == 'services' %}
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[820px] text-left border-collapse">
+                <table class="w-full min-w-[980px] text-left border-collapse">
                     <thead>
                     <tr class="border-b border-slate-800 bg-slate-900/60">
+                        {% if has_multi_host_rows %}
+                            <th class="px-4 py-3 text-[11px] uppercase tracking-wider text-slate-500">Host</th>
+                        {% endif %}
                         <th class="px-4 py-3 text-[11px] uppercase tracking-wider text-slate-500">Port</th>
+                        <th class="px-4 py-3 text-[11px] uppercase tracking-wider text-slate-500">State</th>
                         <th class="px-4 py-3 text-[11px] uppercase tracking-wider text-slate-500">Service</th>
                         <th class="px-4 py-3 text-[11px] uppercase tracking-wider text-slate-500">Version</th>
-                        <th class="px-4 py-3 text-[11px] uppercase tracking-wider text-slate-500">Risk</th>
                     </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-800/70">
                     {% for row in service_rows %}
                         <tr>
+                            {% if has_multi_host_rows %}
+                                <td class="px-4 py-3 text-sm text-slate-300 font-mono">{{ row.extra_data_json.host|default:"-" }}</td>
+                            {% endif %}
                             <td class="px-4 py-3 text-sm font-mono text-blue-300">{{ row.port }}/{{ row.protocol }}</td>
+                            <td class="px-4 py-3 text-sm">
+                                <span class="px-2 py-1 rounded text-[10px] uppercase font-semibold {{ row.state|port_state_badge }}">{{ row.state }}</span>
+                            </td>
                             <td class="px-4 py-3 text-sm text-slate-200">{{ row.service_name|default:"-" }}</td>
                             <td class="px-4 py-3 text-sm text-slate-400">{{ row.service_version|default:"-" }}</td>
-                            <td class="px-4 py-3"><span class="px-2 py-1 rounded text-[10px] uppercase font-semibold {{ row.risk_level|risk_badge }}">{{ row.get_risk_level_display }}</span></td>
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="4" class="px-4 py-10 text-center text-slate-500">No service fingerprints available.</td>
+                            <td colspan="{% if has_multi_host_rows %}5{% else %}4{% endif %}" class="px-4 py-10 text-center text-slate-500">No service fingerprints available.</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% elif tab == 'versions' %}
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[980px] text-left border-collapse">
+                    <thead>
+                    <tr class="border-b border-slate-800 bg-slate-900/60">
+                        {% if has_multi_host_rows %}
+                            <th class="px-4 py-3 text-[11px] uppercase tracking-wider text-slate-500">Host</th>
+                        {% endif %}
+                        <th class="px-4 py-3 text-[11px] uppercase tracking-wider text-slate-500">Port</th>
+                        <th class="px-4 py-3 text-[11px] uppercase tracking-wider text-slate-500">Service</th>
+                        <th class="px-4 py-3 text-[11px] uppercase tracking-wider text-slate-500">Version Detail</th>
+                    </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/70">
+                    {% for row in version_rows %}
+                        <tr>
+                            {% if has_multi_host_rows %}
+                                <td class="px-4 py-3 text-sm text-slate-300 font-mono">{{ row.extra_data_json.host|default:"-" }}</td>
+                            {% endif %}
+                            <td class="px-4 py-3 text-sm font-mono text-blue-300">{{ row.port }}/{{ row.protocol }}</td>
+                            <td class="px-4 py-3 text-sm text-slate-200">{{ row.service_name|default:"-" }}</td>
+                            <td class="px-4 py-3 text-sm text-slate-300">{{ row.service_version|default:"-" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="{% if has_multi_host_rows %}4{% else %}3{% endif %}" class="px-4 py-10 text-center text-slate-500">No version strings available.</td>
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -110,8 +163,8 @@
                 </div>
                 <div class="scanops-panel p-4 bg-slate-900/40">
                     <p class="text-[11px] uppercase tracking-widest text-slate-500">Parsed Host Metadata</p>
-                    <p class="text-sm text-slate-300 mt-2">Latency: {{ parsed_output.host.latency_ms|default:"-" }} ms</p>
-                    <p class="text-sm text-slate-300">Host Status: {{ parsed_output.host.status|default:"unknown" }}</p>
+                    <p class="text-sm text-slate-300 mt-2">Hosts Up: {{ parsed_output.summary.hosts_up|default:"-" }}</p>
+                    <p class="text-sm text-slate-300">Host Status: {{ result.get_host_status_display }}</p>
                 </div>
             </div>
         {% elif tab == 'traceroute' %}
@@ -127,9 +180,9 @@
                     <tbody class="divide-y divide-slate-800/70">
                     {% for hop in traceroute_rows %}
                         <tr>
-                            <td class="px-4 py-3 text-sm text-slate-200">{{ hop.hop }}</td>
-                            <td class="px-4 py-3 text-sm font-mono text-blue-300">{{ hop.host }}</td>
-                            <td class="px-4 py-3 text-sm text-slate-300">{{ hop.latency_ms }} ms</td>
+                            <td class="px-4 py-3 text-sm text-slate-200">{{ hop.hop|default:"-" }}</td>
+                            <td class="px-4 py-3 text-sm font-mono text-blue-300">{{ hop.host|default:hop.ipaddr|default:"-" }}</td>
+                            <td class="px-4 py-3 text-sm text-slate-300">{{ hop.latency_ms|default:"-" }} ms</td>
                         </tr>
                     {% empty %}
                         <tr>
@@ -153,9 +206,9 @@
                     <p class="text-[11px] uppercase tracking-widest text-slate-500 mb-2">Script Alerts</p>
                     {% for alert in script_rows.alerts %}
                         <div class="mb-3">
-                            <p class="text-sm text-white">{{ alert.name }}</p>
-                            <p class="text-xs text-slate-400">{{ alert.detail }}</p>
-                            <span class="inline-block mt-1 px-2 py-0.5 rounded text-[10px] uppercase {{ alert.severity|risk_badge }}">{{ alert.severity }}</span>
+                            <p class="text-sm text-white">{{ alert.name|default:alert.id }}</p>
+                            <p class="text-xs text-slate-400">{{ alert.detail|default:alert.output|default:"-" }}</p>
+                            <span class="inline-block mt-1 px-2 py-0.5 rounded text-[10px] uppercase {{ alert.severity|default:'info'|risk_badge }}">{{ alert.severity|default:"info" }}</span>
                         </div>
                     {% empty %}
                         <p class="text-sm text-slate-500">No alert output was returned.</p>
@@ -163,22 +216,28 @@
                 </div>
             </div>
         {% elif tab == 'raw' %}
-            <p class="text-sm text-slate-400 mb-4">Raw output is available in the dedicated output viewer.</p>
-            <pre class="bg-slate-950 border border-slate-800 rounded-lg p-4 text-xs text-slate-300 max-h-[440px] overflow-auto whitespace-pre-wrap">{{ result.raw_output_text|truncatechars:3500 }}</pre>
-            <a href="{% url 'scans:result-raw' result.pk %}" class="inline-flex mt-4 px-3 py-2 rounded bg-slate-800 text-sm text-slate-100 hover:bg-slate-700">Open full raw output</a>
-        {% elif tab == 'parsed' %}
-            <p class="text-sm text-slate-400 mb-4">Parsed output is available in the dedicated analysis view.</p>
-            <div class="scanops-panel p-4 bg-slate-900/40">
-                <p class="text-sm text-slate-300">Host: {{ parsed_output.host.target|default:result.target_snapshot }}</p>
-                <p class="text-sm text-slate-300">Open Ports: {{ parsed_output.summary.open_ports|default:result.total_open_ports }}</p>
-                <p class="text-sm text-slate-300">Closed Ports: {{ parsed_output.summary.closed_ports|default:result.total_closed_ports }}</p>
-                <p class="text-sm text-slate-300">Filtered Ports: {{ parsed_output.summary.filtered_ports|default:result.total_filtered_ports }}</p>
-            </div>
-            <a href="{% url 'scans:result-parsed' result.pk %}" class="inline-flex mt-4 px-3 py-2 rounded bg-slate-800 text-sm text-slate-100 hover:bg-slate-700">Open parsed analysis</a>
-        {% elif tab == 'notes' %}
-            <div class="scanops-panel p-4 bg-slate-900/40">
-                <p class="text-sm text-slate-300">Comments and analyst notes are reserved for a later module.</p>
-                <textarea class="scanops-input mt-4" rows="4" placeholder="Notes placeholder (not persisted in this phase)" disabled></textarea>
+            <div class="space-y-4">
+                <div class="scanops-panel p-4 bg-slate-900/40">
+                    <p class="text-[11px] uppercase tracking-widest text-slate-500 mb-1">Executed Command</p>
+                    <p class="text-xs font-mono text-blue-200 break-all">{{ result.executed_command|default:"Command not captured." }}</p>
+                </div>
+                <div class="scanops-panel p-4 bg-slate-900/40">
+                    <p class="text-[11px] uppercase tracking-widest text-slate-500 mb-1">Parser Validation</p>
+                    <p class="text-sm text-slate-300">Raw table rows: {{ parser_validation.raw_port_rows|default:0 }}</p>
+                    <p class="text-sm text-slate-300">Parsed rows: {{ parser_validation.parsed_port_rows|default:0 }}</p>
+                    <p class="text-sm text-slate-300">Skipped rows: {{ parser_validation.skipped_rows|default:0 }}</p>
+                    <p class="text-sm text-slate-300">Count match: {% if parser_validation.port_count_match %}<span class="text-emerald-300">Yes</span>{% else %}<span class="text-amber-300">No</span>{% endif %}</p>
+                </div>
+                <div class="scanops-panel overflow-hidden border border-slate-800">
+                    <div class="px-4 py-2 border-b border-slate-800 bg-slate-900/70 text-[11px] uppercase tracking-widest text-slate-500">STDOUT</div>
+                    <pre class="p-4 bg-slate-950 text-xs text-slate-200 overflow-auto max-h-[420px] whitespace-pre font-mono leading-relaxed">{{ result.raw_output_text|default:"No stdout captured for this result." }}</pre>
+                </div>
+                {% if result.raw_error_output %}
+                    <div class="scanops-panel overflow-hidden border border-rose-500/30">
+                        <div class="px-4 py-2 border-b border-rose-500/20 bg-rose-500/10 text-[11px] uppercase tracking-widest text-rose-200">STDERR</div>
+                        <pre class="p-4 bg-slate-950 text-xs text-rose-200 overflow-auto max-h-[280px] whitespace-pre font-mono leading-relaxed">{{ result.raw_error_output }}</pre>
+                    </div>
+                {% endif %}
             </div>
         {% else %}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -188,9 +247,10 @@
                     <p class="text-sm text-slate-300">Profile: {{ result.execution.scan_request.profile.name|default:result.execution.scan_request.get_scan_type_display }}</p>
                     <p class="text-sm text-slate-300">Generated: {{ result.generated_at|date:"M d, Y H:i:s" }}</p>
                     <p class="text-sm text-slate-300">Queue status: {{ result.execution.get_queue_status_display }}</p>
+                    <p class="text-sm text-slate-300">Protocols: {{ summary_counts.protocols|join:", "|default:"-" }}</p>
                 </div>
                 <div class="scanops-panel p-4 bg-slate-900/40">
-                    <p class="text-[11px] uppercase tracking-widest text-slate-500 mb-2">Activity</p>
+                    <p class="text-[11px] uppercase tracking-widest text-slate-500 mb-2">History & Validation</p>
                     {% if previous_result %}
                         <p class="text-sm text-slate-300">Previous result exists from {{ previous_result.generated_at|date:"M d, Y H:i" }}.</p>
                         {% if request.user|has_capability:'compare_results' %}
@@ -199,6 +259,7 @@
                     {% else %}
                         <p class="text-sm text-slate-500">No previous result is available for this host.</p>
                     {% endif %}
+                    <p class="text-sm text-slate-300 mt-3">Raw rows: {{ parser_validation.raw_port_rows|default:0 }} | Parsed rows: {{ parser_validation.parsed_port_rows|default:0 }}</p>
                 </div>
             </div>
         {% endif %}

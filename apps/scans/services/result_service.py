@@ -175,17 +175,75 @@ def get_previous_result(result: ScanResult, *, user=None) -> ScanResult | None:
     return queryset.first()
 
 
+def _state_bucket(state: str) -> str:
+    value = (state or "").strip().lower()
+    if value == "open":
+        return "open"
+    if value == "closed":
+        return "closed"
+    if "filtered" in value:
+        return "filtered"
+    return "other"
+
+
+def _safe_int(value, fallback: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return fallback
+
+
 def build_result_detail_context(result: ScanResult, *, user=None) -> dict:
-    port_results = result.port_results.all().order_by("port", "protocol")
-    service_rows = [row for row in port_results if row.service_name]
+    port_rows = list(result.port_results.all().order_by("port", "protocol"))
+    service_rows = [row for row in port_rows if row.service_name]
+    version_rows = [row for row in port_rows if row.service_version]
     traceroute_rows = result.traceroute_data_json if isinstance(result.traceroute_data_json, list) else []
     script_rows = result.script_output_json if isinstance(result.script_output_json, dict) else {}
+    parsed_output = result.parsed_output_json if isinstance(result.parsed_output_json, dict) else {}
+    parsed_summary = parsed_output.get("summary", {}) if isinstance(parsed_output, dict) else {}
+    state_counts = {"open": 0, "closed": 0, "filtered": 0, "other": 0}
+    protocols: set[str] = set()
+    service_names: set[str] = set()
+    host_markers: set[str] = set()
+    for row in port_rows:
+        state_counts[_state_bucket(row.state)] += 1
+        if row.protocol:
+            protocols.add(row.protocol.lower())
+        if row.service_name:
+            service_names.add(row.service_name.lower())
+        if isinstance(row.extra_data_json, dict):
+            host = (row.extra_data_json.get("host") or "").strip()
+            if host:
+                host_markers.add(host)
+
+    summary_counts = {
+        "table_port_rows": len(port_rows),
+        "row_open_ports": state_counts["open"],
+        "row_closed_ports": state_counts["closed"],
+        "row_filtered_ports": state_counts["filtered"],
+        "total_ports": _safe_int(parsed_summary.get("total_ports"), len(port_rows)),
+        "open_ports": _safe_int(parsed_summary.get("open_ports"), state_counts["open"]),
+        "closed_ports": _safe_int(parsed_summary.get("closed_ports"), state_counts["closed"]),
+        "filtered_ports": _safe_int(parsed_summary.get("filtered_ports"), state_counts["filtered"]),
+        "other_ports": state_counts["other"],
+        "unique_services": len(service_names),
+        "service_rows": len(service_rows),
+        "version_rows": len(version_rows),
+        "protocol_count": len(protocols),
+        "protocols": sorted(protocols),
+        "state_breakdown": state_counts,
+    }
     return {
-        "port_results": port_results,
+        "port_results": port_rows,
         "service_rows": service_rows,
+        "version_rows": version_rows,
         "traceroute_rows": traceroute_rows,
         "script_rows": script_rows,
-        "parsed_output": result.parsed_output_json if isinstance(result.parsed_output_json, dict) else {},
+        "parsed_output": parsed_output,
+        "summary_counts": summary_counts,
+        "parser_warnings": result.parser_warnings_json if isinstance(result.parser_warnings_json, list) else [],
+        "parser_validation": result.parser_validation_json if isinstance(result.parser_validation_json, dict) else {},
+        "has_multi_host_rows": len(host_markers) > 1,
         "previous_result": get_previous_result(result, user=user),
     }
 
@@ -199,7 +257,7 @@ def build_host_detail_context(target: Target, *, user=None) -> dict:
     if user is not None:
         results = data_visibility_service.get_user_visible_results(user, queryset=results)
     latest_result = results.first()
-    current_ports = latest_result.port_results.all().order_by("port") if latest_result else []
+    current_ports = latest_result.port_results.filter(state="open").order_by("port") if latest_result else []
 
     trend_rows = []
     for row in results[:12][::-1]:
