@@ -119,4 +119,62 @@
             {% include "partials/scan_preview.html" %}
         </div>
     </div>
+    {{ profile_presets|json_script:"scan-profile-presets" }}
+    <script>
+        (function () {
+            const profileSelect = document.getElementById("id_profile");
+            if (!profileSelect) return;
+
+            const form = document.getElementById("scan-request-form");
+            if (!form) return;
+
+            const profileDataNode = document.getElementById("scan-profile-presets");
+            if (!profileDataNode) return;
+
+            let presets = [];
+            try {
+                presets = JSON.parse(profileDataNode.textContent || "[]");
+            } catch (error) {
+                presets = [];
+            }
+
+            const presetById = new Map(presets.map((preset) => [String(preset.id), preset]));
+            const fieldMap = {
+                scan_type: document.getElementById("id_scan_type"),
+                timing_profile: document.getElementById("id_timing_profile"),
+                port_scope: document.getElementById("id_port_input"),
+                enable_host_discovery: document.getElementById("id_enable_host_discovery"),
+                enable_service_detection: document.getElementById("id_enable_service_detection"),
+                enable_version_detection: document.getElementById("id_enable_version_detection"),
+                enable_os_detection: document.getElementById("id_enable_os_detection"),
+                enable_traceroute: document.getElementById("id_enable_traceroute"),
+                enable_dns_resolution: document.getElementById("id_enable_dns_resolution"),
+            };
+
+            const applyPreset = (preset) => {
+                if (!preset) return;
+
+                if (fieldMap.scan_type) fieldMap.scan_type.value = preset.scan_type || "";
+                if (fieldMap.timing_profile) fieldMap.timing_profile.value = preset.timing_profile || "";
+                if (fieldMap.port_scope) fieldMap.port_scope.value = preset.port_scope || "";
+                if (fieldMap.enable_host_discovery) fieldMap.enable_host_discovery.checked = Boolean(preset.enable_host_discovery);
+                if (fieldMap.enable_service_detection) fieldMap.enable_service_detection.checked = Boolean(preset.enable_service_detection);
+                if (fieldMap.enable_version_detection) fieldMap.enable_version_detection.checked = Boolean(preset.enable_version_detection);
+                if (fieldMap.enable_os_detection) fieldMap.enable_os_detection.checked = Boolean(preset.enable_os_detection);
+                if (fieldMap.enable_traceroute) fieldMap.enable_traceroute.checked = Boolean(preset.enable_traceroute);
+                if (fieldMap.enable_dns_resolution) fieldMap.enable_dns_resolution.checked = Boolean(preset.enable_dns_resolution);
+
+                Object.values(fieldMap).forEach((field) => {
+                    if (!field) return;
+                    field.dispatchEvent(new Event("change", { bubbles: true }));
+                });
+            };
+
+            profileSelect.addEventListener("change", () => {
+                const selectedId = profileSelect.value;
+                if (!selectedId) return;
+                applyPreset(presetById.get(String(selectedId)));
+            });
+        })();
+    </script>
 {% endblock %}

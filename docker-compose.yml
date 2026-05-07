@@ -70,6 +70,50 @@ services:
       retries: 5
       start_period: 45s
 
+  scanops-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      JTRO_ENVIRONMENT: "${JTRO_ENVIRONMENT:-dev}"
+      JTRO_DEBUG: "${JTRO_DEBUG:-True}"
+      JTRO_SECRET_KEY: "${JTRO_SECRET_KEY:-scanops-dev-secret-key-change-me}"
+      JTRO_SSL_ENABLED: "${JTRO_SSL_ENABLED:-False}"
+      JTRO_ALLOWED_HOSTS: "${JTRO_ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0}"
+      JTRO_CSRF_TRUSTED_ORIGINS: "${JTRO_CSRF_TRUSTED_ORIGINS:-}"
+      JTRO_DEV_DATABASE: "postgres"
+      JTRO_DEV_DATABASE_ENGINE: "django.db.backends.postgresql"
+      JTRO_DEV_DATABASE_NAME: "${SCANOPS_DB_NAME:-db_scanops}"
+      JTRO_DEV_DATABASE_USER: "${SCANOPS_DB_USER:-scanops}"
+      JTRO_DEV_DATABASE_PASSWORD: "${SCANOPS_DB_PASSWORD:-scanops_dev_password}"
+      JTRO_DEV_DATABASE_HOST: "db"
+      JTRO_DEV_DATABASE_PORT: "${SCANOPS_DB_PORT:-5432}"
+      JTRO_DATABASE_ENGINE: "django.db.backends.postgresql"
+      JTRO_DATABASE_NAME: "${SCANOPS_DB_NAME:-db_scanops}"
+      JTRO_DATABASE_USER: "${SCANOPS_DB_USER:-scanops}"
+      JTRO_DATABASE_PASSWORD: "${SCANOPS_DB_PASSWORD:-scanops_dev_password}"
+      JTRO_DATABASE_HOST: "db"
+      JTRO_DATABASE_PORT: "${SCANOPS_DB_PORT:-5432}"
+      SCANOPS_SCAN_WORKER_NAME: "scanops-worker-01"
+    command:
+      - sh
+      - -c
+      - >
+        while true; do
+          python manage.py process_scan_queue --limit 1 --include-running --resume-stale-after-seconds 900 --worker-name "$${SCANOPS_SCAN_WORKER_NAME}";
+          sleep 2;
+        done
+    volumes:
+      - scanops_static:/app/static_root
+      - scanops_media:/app/media_root
+      - scanops_logs:/app/app_logs
+    restart: unless-stopped
+
 volumes:
   scanops_postgres_data:
   scanops_static:

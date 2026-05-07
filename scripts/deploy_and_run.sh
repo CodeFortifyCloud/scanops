@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 COMPOSE_FILE="${PROJECT_ROOT}/docker-compose.yml"
 APP_SERVICE="${SCANOPS_SERVICE:-scanops-web}"
+WORKER_SERVICE="${SCANOPS_WORKER_SERVICE:-scanops-worker}"
 DB_SERVICE="${SCANOPS_DB_SERVICE:-db}"
 HOST="${SCANOPS_HOST:-0.0.0.0}"
 PORT="${SCANOPS_PORT:-8008}"
@@ -55,6 +56,7 @@ Actions:
 Options:
   --service <name>        Compose app service name (default: ${APP_SERVICE})
   --db-service <name>     Compose DB service name (default: ${DB_SERVICE})
+  --worker-service <name> Compose worker service name (default: ${WORKER_SERVICE})
   --port <port>           Host port for readiness checks and compose mapping (default: ${PORT})
   --build                 Force build step for 'up' and 'restart' (default behavior)
   --no-build              Skip build step for 'up' and 'restart'
@@ -67,6 +69,7 @@ Options:
 Environment:
   SCANOPS_SERVICE         Override compose app service name
   SCANOPS_DB_SERVICE      Override compose DB service name
+  SCANOPS_WORKER_SERVICE  Override compose worker service name
   SCANOPS_PORT            Override host port mapping (default 8008)
   SCANOPS_HOST            Display host for startup URL (default 0.0.0.0)
   SCANOPS_DB_NAME         Docker PostgreSQL database name
@@ -89,6 +92,11 @@ while [[ $# -gt 0 ]]; do
     --db-service)
       [[ $# -ge 2 ]] || die "--db-service requires a value"
       DB_SERVICE="$2"
+      shift 2
+      ;;
+    --worker-service)
+      [[ $# -ge 2 ]] || die "--worker-service requires a value"
+      WORKER_SERVICE="$2"
       shift 2
       ;;
     --port)
@@ -234,6 +242,8 @@ ensure_runtime_up() {
 
   log "Starting service '${APP_SERVICE}'"
   compose up -d --remove-orphans "${APP_SERVICE}"
+  log "Starting service '${WORKER_SERVICE}'"
+  compose up -d --remove-orphans "${WORKER_SERVICE}"
 }
 
 wait_for_app() {
@@ -329,10 +339,10 @@ start_service() {
     log "Application is reachable at http://${HOST}:${PORT}/login/"
   fi
 
-  compose ps "${DB_SERVICE}" "${APP_SERVICE}"
+  compose ps "${DB_SERVICE}" "${APP_SERVICE}" "${WORKER_SERVICE}"
 
   if [[ "${FOLLOW_LOGS}" -eq 1 ]]; then
-    compose logs -f --tail=200 "${DB_SERVICE}" "${APP_SERVICE}"
+    compose logs -f --tail=200 "${DB_SERVICE}" "${APP_SERVICE}" "${WORKER_SERVICE}"
   fi
 }
 
@@ -370,10 +380,10 @@ main() {
       restart_service
       ;;
     logs)
-      compose logs -f --tail=200 "${DB_SERVICE}" "${APP_SERVICE}"
+      compose logs -f --tail=200 "${DB_SERVICE}" "${APP_SERVICE}" "${WORKER_SERVICE}"
       ;;
     ps)
-      compose ps "${DB_SERVICE}" "${APP_SERVICE}"
+      compose ps "${DB_SERVICE}" "${APP_SERVICE}" "${WORKER_SERVICE}"
       ;;
     migrate)
       ensure_runtime_up
@@ -404,6 +414,8 @@ main() {
       restore_db
       log "Starting service '${APP_SERVICE}'"
       compose up -d --remove-orphans "${APP_SERVICE}"
+      log "Starting service '${WORKER_SERVICE}'"
+      compose up -d --remove-orphans "${WORKER_SERVICE}"
       wait_for_app
       run_manage_command migrate --noinput
       ;;

@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 
 from apps.scans.models import ScanExecution
+from apps.scans.services.execution_service import log_execution_event
 from apps.scans.services.nmap_execution_service import run_execution_with_nmap
 
 
@@ -30,6 +34,38 @@ class Command(BaseCommand):
             action="store_true",
             help="Also process executions currently marked running.",
         )
+        parser.add_argument(
+            "--resume-stale-after-seconds",
+            type=int,
+            default=900,
+            help="When --include-running is set, re-queue running executions older than this threshold.",
+        )
+
+    @staticmethod
+    def _requeue_stale_running(*, stale_after_seconds: int) -> int:
+        cutoff = timezone.now() - timedelta(seconds=max(60, stale_after_seconds))
+        stale_qs = ScanExecution.objects.filter(
+            status=ScanExecution.Status.RUNNING,
+            queue_status=ScanExecution.QueueStatus.PROCESSING,
+            is_archived=False,
+            updated_at__lt=cutoff,
+        ).order_by("updated_at")
+
+        updated = 0
+        for execution in stale_qs:
+            execution.status = ScanExecution.Status.QUEUED
+            execution.queue_status = ScanExecution.QueueStatus.WAITING
+            execution.current_stage = "Queued"
+            execution.status_message = "Re-queued automatically after worker timeout."
+            execution.save(update_fields=["status", "queue_status", "current_stage", "status_message", "updated_at"])
+            log_execution_event(
+                execution,
+                "requeued",
+                "Execution re-queued after stale running timeout.",
+                metadata={"stale_after_seconds": stale_after_seconds},
+            )
+            updated += 1
+        return updated
 
     def handle(self, *args, **options):
         limit = max(1, int(options["limit"]))
@@ -38,6 +74,12 @@ class Command(BaseCommand):
         nmap_binary = (options.get("nmap_binary") or "").strip() or None
         timeout_seconds = int(options.get("timeout_seconds") or 0) or None
         include_running = bool(options.get("include_running"))
+        resume_stale_after_seconds = int(options.get("resume_stale_after_seconds") or 900)
+
+        if include_running:
+            requeued = self._requeue_stale_running(stale_after_seconds=resume_stale_after_seconds)
+            if requeued:
+                self.stdout.write(self.style.WARNING(f"Re-queued {requeued} stale running execution(s)."))
 
         queryset = ScanExecution.objects.select_related("scan_request__target", "scan_request__profile").order_by("priority", "created_at")
         if execution_id:
