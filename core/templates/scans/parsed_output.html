@@ -41,7 +41,7 @@
                 <div class="px-5 py-4 border-b border-slate-800 bg-slate-900/60">
                     <h2 class="text-base font-semibold text-white">Port Findings</h2>
                 </div>
-                {% include "partials/result_ports_table.html" with port_results=result.port_results.all %}
+                {% include "partials/result_ports_table.html" with port_results=result.port_results.all has_multi_host_rows=has_multi_host_rows %}
             </div>
 
             <div class="scanops-panel p-5">

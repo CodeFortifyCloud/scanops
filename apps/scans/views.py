@@ -74,7 +74,26 @@ class ScanRequestCreateView(CreateView):
         initial_payload = self.get_initial()
         initial_payload["target"] = None
         initial_policy = validate_scan_options(initial_payload)
+        form = context.get("form")
+        profile_presets = []
+        if form is not None and "profile" in form.fields:
+            for profile in form.fields["profile"].queryset:
+                profile_presets.append(
+                    {
+                        "id": profile.pk,
+                        "scan_type": profile.scan_type,
+                        "timing_profile": profile.timing_profile,
+                        "port_scope": profile.port_scope or "",
+                        "enable_host_discovery": profile.enable_host_discovery,
+                        "enable_service_detection": profile.enable_service_detection,
+                        "enable_version_detection": profile.enable_version_detection,
+                        "enable_os_detection": profile.enable_os_detection,
+                        "enable_traceroute": profile.enable_traceroute,
+                        "enable_dns_resolution": profile.enable_dns_resolution,
+                    }
+                )
         context["scan_preview"] = build_scan_summary(initial_payload, initial_policy)
+        context["profile_presets"] = profile_presets
         context["breadcrumbs"] = [
             {"label": "Scans", "url": ""},
             {"label": "New Request", "url": ""},

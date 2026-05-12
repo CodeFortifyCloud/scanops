@@ -109,6 +109,6 @@ def process_main_folder(main_folder: str) -> None:
 
 if __name__ == "__main__":
     # এখানে main folder path দিন
-    main_folder_path = "/home/jaki/Downloads/netscan/stitch_netscan_console"
+    main_folder_path = "/home/jaki/Downloads/nationwire_news_portal"
 
     process_main_folder(main_folder_path)

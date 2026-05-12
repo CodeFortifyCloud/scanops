@@ -186,3 +186,7 @@ Optional dry run:
 ## Security Note
 
 ScanOps is intended for internal authorized-use operations only. Do not use this project to scan unauthorized systems or networks.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

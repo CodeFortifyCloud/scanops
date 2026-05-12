@@ -89,6 +89,18 @@ def risk_badge(value: str) -> str:
 
 
 @register.filter
+def port_state_badge(value: str) -> str:
+    normalized = (value or "").strip().lower()
+    if normalized == "open":
+        return "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+    if normalized == "closed":
+        return "bg-rose-500/10 text-rose-300 border border-rose-500/20"
+    if "filtered" in normalized:
+        return "bg-amber-500/10 text-amber-300 border border-amber-500/20"
+    return "bg-slate-500/10 text-slate-300 border border-slate-500/20"
+
+
+@register.filter
 def severity_badge(value: str) -> str:
     styles = {
         "info": "bg-blue-500/10 text-blue-300 border border-blue-500/20",
